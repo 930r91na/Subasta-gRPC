@@ -6,11 +6,11 @@
     <title>Live Auction System</title>
     
     <!-- External CSS -->
-    <link rel="stylesheet" href="web/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>🔨 Live Auction System</h1>
+        <h1> Live Auction System</h1>
         
         <!-- User Registration Section -->
         <div id="userSection">
@@ -39,6 +39,22 @@
             </div>
         </div>
 
+        <!-- Add Product Section -->
+        <h2>
+            ➕ Add New Product
+        </h2>
+        <div id="addProductArea">
+            <div id="addProductSection" class="form-section" style="display: none;">
+                <input type="text" id="newProductName" placeholder="Product Name">
+                <input type="number" id="newProductPrice" placeholder="Starting Price" min="0.01" step="0.01">
+                <button onclick="addProduct()">Add Product</button>
+            </div>
+            <div class="empty-state">
+                Need to register to add products
+            </div>
+        </div>
+        
+
         <!-- Bid History Section -->
         <h2>📊 Recent Bids</h2>
         <div id="bidHistory">
@@ -49,6 +65,6 @@
     </div>
 
     <!-- External JavaScript -->
-    <script src="web/static/js/auction.js"></script>
+    <script src="/static/js/auction.js"></script>
 </body>
 </html>

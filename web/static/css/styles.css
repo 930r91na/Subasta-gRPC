@@ -6,38 +6,41 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background: linear-gradient(135deg, #54a9be 0%, #add16a 100%);
+    background: #f0f2f5; /* Soft light gray background */
+    color: #333;
     min-height: 100vh;
 }
 
 /* Container */
 .container {
-    background: white;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
 }
 
 /* Headers */
 h1 {
-    color: #333;
+    color: #2c3e50; /* Dark slate blue */
     margin-bottom: 30px;
     text-align: center;
     font-size: 2.5em;
+    font-weight: 600;
 }
 
 h2 {
-    color: #555;
-    margin: 30px 0 15px 0;
-    border-bottom: 3px solid #667eea;
+    color: #2c3e50;
+    margin: 40px 0 20px 0;
+    border-bottom: 2px solid #e0e0e0; /* Lighter border */
     padding-bottom: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    font-size: 1.8em;
 }
 
 h2 .header-controls {
@@ -49,13 +52,14 @@ h2 .header-controls {
 
 /* User Section */
 #userSection {
-    background: #f8f9fa;
+    background: #f8f9fa; /* Very light gray */
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 30px;
     display: flex;
-    gap: 10px;
+    gap: 15px;
     align-items: center;
+    border: 1px solid #e9ecef;
 }
 
 #username {
@@ -63,7 +67,7 @@ h2 .header-controls {
 }
 
 #userStatus {
-    color: #28a745;
+    color: #007b5e; /* Darker, classier green */
     font-weight: 600;
     margin-left: 15px;
 }
@@ -72,26 +76,29 @@ h2 .header-controls {
 input[type="text"],
 input[type="number"] {
     padding: 12px 15px;
-    border: 2px solid #ddd;
+    border: 1px solid #ced4da; /* Standard gray border */
     border-radius: 6px;
     font-size: 16px;
-    transition: border-color 0.3s;
+    font-family: 'Roboto', sans-serif;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #5a95f5; /* Softer blue focus */
+    box-shadow: 0 0 0 3px rgba(90, 149, 245, 0.2);
 }
 
 input[type="text"]:disabled {
     background: #e9ecef;
     cursor: not-allowed;
+    color: #6c757d;
 }
 
 /* Buttons */
 button {
-    background: #667eea;
+    background: #34495e; /* Dark slate blue */
     color: white;
     padding: 12px 30px;
     border: none;
@@ -99,71 +106,82 @@ button {
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
-    transition: all 0.3s;
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
 }
 
 button:hover {
-    background: #5568d3;
+    background: #2c3e50; /* Darken on hover */
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(52, 73, 94, 0.2);
 }
 
 button:active {
     transform: translateY(0);
+    box-shadow: none;
 }
 
 button.refresh-btn {
     font-size: 14px;
     padding: 8px 16px;
+    background: #6c757d; /* Medium gray */
+}
+
+button.refresh-btn:hover {
+    background: #5a6268;
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
 }
 
 button.bid-button {
-    background: #28a745;
+    background: #f39c12; /* Gold/Amber accent */
     min-width: 120px;
 }
 
 button.bid-button:hover {
-    background: #218838;
+    background: #e67e22; /* Darker amber */
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
 }
 
 /* Products */
 .product {
-    border: 2px solid #e0e0e0;
-    padding: 20px;
-    margin: 15px 0;
+    border: 1px solid #e9ecef; /* Lighter border */
+    padding: 25px;
+    margin: 20px 0;
     border-radius: 12px;
     background: #fff;
     transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .product:hover {
-    border-color: #667eea;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    border-color: #5a95f5;
+    box-shadow: 0 8px 25px rgba(90, 149, 245, 0.1);
     transform: translateY(-3px);
 }
 
 .product h3 {
-    color: #333;
-    margin-bottom: 10px;
-    font-size: 1.5em;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.6em;
+    font-weight: 500;
 }
 
 .product p {
-    color: #666;
-    margin: 5px 0;
+    color: #6c757d; /* Muted text color */
+    margin: 8px 0;
+    font-size: 1.1em;
 }
 
 .price {
     font-size: 28px !important;
-    font-weight: bold !important;
-    color: #667eea !important;
+    font-weight: 600 !important;
+    color: #34495e !important; /* Match dark header */
     margin: 15px 0 !important;
 }
 
 .bid-section {
     display: flex;
     gap: 10px;
-    margin-top: 15px;
+    margin-top: 20px;
 }
 
 .bid-section input {
@@ -177,15 +195,20 @@ button.bid-button:hover {
     border-radius: 8px;
     max-height: 400px;
     overflow-y: auto;
+    border: 1px solid #e9ecef;
 }
 
 .bid-entry {
-    padding: 12px;
-    margin: 8px 0;
+    padding: 14px;
+    margin-bottom: 10px;
     background: white;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #f39c12; /* Amber accent */
     border-radius: 4px;
     animation: slideIn 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 @keyframes slideIn {
@@ -200,31 +223,32 @@ button.bid-button:hover {
 }
 
 .bid-entry strong {
-    color: #667eea;
+    color: #34495e;
 }
 
 .bid-entry small {
     color: #999;
-    float: right;
+    font-size: 0.9em;
 }
 
 /* Status Messages */
 .last-update {
     color: #999;
     font-size: 14px;
-    font-weight: normal;
+    font-weight: 400;
 }
 
 .empty-state {
     text-align: center;
     padding: 40px;
     color: #999;
+    font-size: 1.1em;
 }
 
 .loading {
     text-align: center;
     padding: 20px;
-    color: #667eea;
+    color: #5a95f5;
 }
 
 /* Status Indicators */
@@ -261,7 +285,7 @@ button.bid-button:hover {
     }
     
     .container {
-        padding: 15px;
+        padding: 20px;
     }
     
     h1 {
@@ -269,6 +293,7 @@ button.bid-button:hover {
     }
     
     h2 {
+        font-size: 1.5em;
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
@@ -281,15 +306,25 @@ button.bid-button:hover {
     
     #userSection {
         flex-direction: column;
+        align-items: stretch;
     }
     
     .bid-section {
         flex-direction: column;
     }
+
+    .bid-section input,
+    .bid-section button {
+        width: 100%;
+    }
     
+    .bid-entry {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
     .bid-entry small {
-        float: none;
-        display: block;
         margin-top: 5px;
     }
 }
@@ -303,11 +338,11 @@ button.bid-button:hover {
 .tooltip .tooltiptext {
     visibility: hidden;
     width: 200px;
-    background-color: #555;
+    background-color: #34495e;
     color: #fff;
     text-align: center;
     border-radius: 6px;
-    padding: 5px;
+    padding: 8px;
     position: absolute;
     z-index: 1;
     bottom: 125%;
@@ -316,9 +351,56 @@ button.bid-button:hover {
     opacity: 0;
     transition: opacity 0.3s;
     font-size: 12px;
+    font-weight: 500;
 }
 
 .tooltip:hover .tooltiptext {
     visibility: visible;
     opacity: 1;
+}
+
+/* Reusable Form Section */
+.form-section {
+    background: #f8f9fa; /* Very light gray */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px; /* Reduced margin */
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    border: 1px solid #e9ecef;
+}
+
+/* Style the new add product section */
+#addProductSection {
+    background: #fdfdfd; /* Even lighter background */
+}
+
+#addProductSection input[type="text"] {
+    flex: 2; /* Make product name input wider */
+}
+#addProductSection input[type="number"] {
+    flex: 1;
+}
+
+/* Override for user section to use the new class */
+#userSection {
+    margin-bottom: 10px; /* Make space for the new section */
+}
+
+#userSection input {
+    flex: 1;
+}
+
+/* Responsive adjustments for new section */
+@media (max-width: 768px) {
+    .form-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-section input,
+    .form-section button {
+        width: 100%;
+    }
 }

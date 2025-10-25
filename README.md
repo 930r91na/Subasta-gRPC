@@ -1,7 +1,15 @@
+# Setup Guide 
+To build you must run 
+```
+make build
+```
 
+You must run for the server
+```
+go run cmd/server/main.go
+```
 
- grpcwebproxy --backend_addr=localhost:50051 --run_tls_server=false --allow_all_origins
-
-
- 
-npm install -g protoc-gen-js
+For the clients
+```
+go run cmd/webserver/main.go
+```

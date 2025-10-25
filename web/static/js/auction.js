@@ -104,6 +104,15 @@ async function registerUser() {
             currentUser = username;
             document.getElementById('userStatus').textContent = '✓ Logged in as ' + username;
             usernameInput.disabled = true;
+
+            document.getElementById('addProductSection').style.display = 'flex';
+
+            // Hide the 'Need to register' empty state inside the add-product area
+            const addProductArea = document.getElementById('addProductArea');
+            if (addProductArea) {
+                const empty = addProductArea.querySelector('.empty-state');
+                if (empty) empty.style.display = 'none';
+            }
             
             await loadCatalog();
             startAutoRefresh();
@@ -333,7 +342,72 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Add new product
+async function addProduct() {
+    if (!currentUser) {
+        showAlert('Please register first', 'warning');
+        return;
+    }
+
+    const emptyState = history.querySelector('.empty-state');
+    if (emptyState) {
+        history.innerHTML = '';
+    }
+
+    const productNameInput = document.getElementById('newProductName');
+    const productPriceInput = document.getElementById('newProductPrice');
+    
+    const productName = productNameInput.value.trim();
+    const initialPrice = parseFloat(productPriceInput.value);
+
+    if (!productName) {
+        showAlert('Please enter a product name', 'warning');
+        return;
+    }
+    if (isNaN(initialPrice) || initialPrice <= 0) {
+        showAlert('Please enter a valid starting price', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${CONFIG.API_URL}/auction.AuctionService/AddProduct`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                seller: currentUser,
+                product: productName,
+                initial_price: initialPrice // Matches the JSON tag in the Go handler
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showAlert('Product added successfully!', 'success');
+            // Clear inputs
+            productNameInput.value = '';
+            productPriceInput.value = '';
+            // Hide the add-product empty state (if any) and refresh catalog immediately
+            const addProductArea = document.getElementById('addProductArea');
+            if (addProductArea) {
+                const empty = addProductArea.querySelector('.empty-state');
+                if (empty) empty.style.display = 'none';
+            }
+
+            // Refresh catalog immediately
+            await loadCatalog();
+        } else {
+            showAlert('Failed to add product: ' + data.message, 'error');
+        }
+    } catch (err) {
+        console.error('Error adding product:', err);
+        showAlert('Error adding product. Please try again.', 'error');
+    }
+}
+
 // Export functions to global scope for inline onclick handlers
 window.registerUser = registerUser;
 window.placeBid = placeBid;
 window.manualRefresh = manualRefresh;
+window.addProduct = addProduct; 

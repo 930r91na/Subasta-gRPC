@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	pb "github.com/930r91na/Subasta-grpc/pkg/auction"
@@ -30,12 +31,19 @@ func main() {
 	http.HandleFunc("/auction.AuctionService/AddProduct", corsMiddleware(handleAddProduct))
 	http.HandleFunc("/auction.AuctionService/GetProduct", corsMiddleware(handleGetProduct))
 
-	// Serve static files from Client directory
-	fs := http.FileServer(http.Dir("../../web/templates"))
+	// Serve static files from web directory (relative to where you run the command)
+	// This should be run from the project root
+	webDir, err := filepath.Abs("web")
+	if err != nil {
+		log.Fatalf("Failed to get web directory path: %v", err)
+	}
+
+	fs := http.FileServer(http.Dir(webDir))
 	http.Handle("/", fs)
 
 	log.Println("🚀 Web UI Server started on http://localhost:8080")
-	log.Println("📂 Serving files from Client directory")
+	log.Printf("📂 Serving files from: %s", webDir)
+	log.Println("📌 Access the UI at: http://localhost:8080/templates/index.html")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 

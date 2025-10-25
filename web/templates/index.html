@@ -1,28 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Live Auction System</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
+    <title>Live Auction System</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="web/static/css/styles.css">
 </head>
 <body>
     <div class="container">
         <h1>🔨 Live Auction System</h1>
         
+        <!-- User Registration Section -->
         <div id="userSection">
-            <input type="text" id="username" placeholder="Enter your name">
+            <input type="text" 
+                   id="username" 
+                   placeholder="Enter your name"
+                   autocomplete="name">
             <button onclick="registerUser()">Register / Login</button>
             <span id="userStatus"></span>
         </div>
 
-        <h2>🛍️ Active Auctions</h2>
+        <!-- Active Auctions Section -->
+        <h2>
+            🛍️ Active Auctions
+            <span class="header-controls">
+                <span class="last-update" id="lastUpdate"></span>
+                <span class="status-indicator active" title="Auto-refresh status"></span>
+                <button class="refresh-btn" onclick="manualRefresh()" title="Refresh catalog now">
+                    🔄 Refresh
+                </button>
+            </span>
+        </h2>
         <div id="products">
             <div class="empty-state">
                 Please register to view available products
             </div>
         </div>
 
+        <!-- Bid History Section -->
         <h2>📊 Recent Bids</h2>
         <div id="bidHistory">
             <div class="empty-state">
@@ -31,170 +48,7 @@
         </div>
     </div>
 
-    <script>
-        let currentUser = '';
-        const API_URL = 'http://localhost:8080';
-
-        async function registerUser() {
-            const username = document.getElementById('username').value.trim();
-            
-            if (!username) {
-                alert('Please enter your name');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/auction.AuctionService/RegisterUser`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({name: username})
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    currentUser = username;
-                    document.getElementById('userStatus').textContent = '✓ Logged in as ' + username;
-                    document.getElementById('username').disabled = true;
-                    await loadCatalog();
-                } else {
-                    alert('Registration failed: ' + data.message);
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                alert('Connection error. Make sure the gRPC server is running on port 50051');
-            }
-        }
-
-        async function loadCatalog() {
-            if (!currentUser) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/auction.AuctionService/GetCatalog`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({})
-                });
-                
-                const data = await response.json();
-                displayProducts(data.products || []);
-            } catch (err) {
-                console.error('Error:', err);
-            }
-        }
-
-        function displayProducts(products) {
-            const container = document.getElementById('products');
-            
-            if (products.length === 0) {
-                container.innerHTML = '<div class="empty-state">No products available. Add some products to start bidding!</div>';
-                return;
-            }
-            
-            container.innerHTML = '';
-            
-            products.forEach(product => {
-                const div = document.createElement('div');
-                div.className = 'product';
-                div.innerHTML = `
-                    <h3>📦 ${product.product}</h3>
-                    <p><strong>Seller:</strong> ${product.seller}</p>
-                    <p><strong>Starting Price:</strong> $${product.initial_price.toFixed(2)}</p>
-                    <p class="price">💰 Current Bid: $${product.current_price.toFixed(2)}</p>
-                    <div class="bid-section">
-                        <input type="number" id="bid-${product.product}" 
-                               placeholder="Enter your bid (min $${(product.current_price + 0.01).toFixed(2)})" 
-                               min="${product.current_price + 0.01}"
-                               step="0.01">
-                        <button class="bid-button" onclick="placeBid('${product.product}')">
-                            Place Bid
-                        </button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        async function placeBid(productName) {
-            if (!currentUser) {
-                alert('Please register first');
-                return;
-            }
-            
-            const amountInput = document.getElementById(`bid-${productName}`);
-            const amount = parseFloat(amountInput.value);
-            
-            if (!amount || amount <= 0) {
-                alert('Please enter a valid bid amount');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/auction.AuctionService/PlaceBid`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        buyer: currentUser,
-                        product: productName,
-                        amount: amount
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    addBidToHistory(currentUser, productName, amount);
-                    amountInput.value = '';
-                    await loadCatalog();
-                    alert('✅ Bid accepted! Current price: $' + data.current_price.toFixed(2));
-                } else {
-                    alert('❌ ' + data.message);
-                }
-            } catch (err) {
-                console.error('Error:', err);
-                alert('Error placing bid. Please try again.');
-            }
-        }
-
-        function addBidToHistory(buyer, product, amount) {
-            const history = document.getElementById('bidHistory');
-            
-            // Remove empty state if present
-            if (history.querySelector('.empty-state')) {
-                history.innerHTML = '';
-            }
-            
-            const entry = document.createElement('div');
-            entry.className = 'bid-entry';
-            entry.innerHTML = `
-                <strong>${buyer}</strong> bid 
-                <strong>$${amount.toFixed(2)}</strong> on 
-                <strong>${product}</strong>
-                <small>${new Date().toLocaleTimeString()}</small>
-            `;
-            history.insertBefore(entry, history.firstChild);
-            
-            // Keep only last 10 bids
-            while (history.children.length > 10) {
-                history.removeChild(history.lastChild);
-            }
-        }
-
-        // Auto-refresh every 3 seconds if user is logged in
-        setInterval(() => {
-            if (currentUser) loadCatalog();
-        }, 3000);
-
-        // Allow Enter key to register
-        document.getElementById('username').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                registerUser();
-            }
-        });
-    </script>
+    <!-- External JavaScript -->
+    <script src="web/static/js/auction.js"></script>
 </body>
 </html>

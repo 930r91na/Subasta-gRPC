@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package auction;
+
+option go_package = "./auction";
+
+// ========== Messages (Data Structures) ==========
+
+// User information
+message User {
+  string name = 1;
+}
+
+// Product information
+message ProductInfo {
+  string seller = 1;
+  string product = 2;
+  float initial_price = 3;
+  float current_price = 4;
+}
+
+// Bid information
+message BidInfo {
+  string buyer = 1;
+  string product = 2;
+  float amount = 3;
+}
+
+// ========== Request/Response Messages ==========
+
+// Register user
+message RegisterUserRequest {
+  string name = 1;
+}
+
+message RegisterUserResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Add product for sale
+message AddProductRequest {
+  string seller = 1;
+  string product = 2;
+  float initial_price = 3;
+}
+
+message AddProductResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Place bid
+message PlaceBidRequest {
+  string buyer = 1;
+  string product = 2;
+  float amount = 3;
+}
+
+message PlaceBidResponse {
+  bool success = 1;
+  string message = 2;
+  float current_price = 3;
+}
+
+// Get catalog
+message GetCatalogRequest {
+  // Empty - no parameters needed
+}
+
+message GetCatalogResponse {
+  repeated ProductInfo products = 1;
+}
+
+// Get product details
+message GetProductRequest {
+  string product = 1;
+}
+
+message GetProductResponse {
+  bool found = 1;
+  ProductInfo product = 2;
+}
+
+// ========== Service Definition ==========
+
+service AuctionService {
+  // Register a new user
+  rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
+  
+  // Add a product for sale
+  rpc AddProduct(AddProductRequest) returns (AddProductResponse);
+  
+  // Place a bid on a product
+  rpc PlaceBid(PlaceBidRequest) returns (PlaceBidResponse);
+  
+  // Get the catalog of all products
+  rpc GetCatalog(GetCatalogRequest) returns (GetCatalogResponse);
+  
+  // Get specific product information
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+}

@@ -1,6 +1,8 @@
 module github.com/930r91na/Subasta-grpc
 
-go 1.25.3
+go 1.24.0
+
+toolchain go1.24.7
 
 require (
 	google.golang.org/grpc v1.76.0

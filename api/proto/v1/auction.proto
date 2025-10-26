@@ -17,6 +17,8 @@ message ProductInfo {
   string product = 2;
   float initial_price = 3;
   float current_price = 4;
+  int64 auction_end_time = 5; // Unix timestamp when auction ends
+  bool is_active = 6; // Whether auction is still active
 }
 
 // Bid information
@@ -24,6 +26,14 @@ message BidInfo {
   string buyer = 1;
   string product = 2;
   float amount = 3;
+}
+
+// Purchased item information
+message PurchasedItem {
+  string product = 1;
+  string seller = 2;
+  float purchase_price = 3;
+  int64 purchase_time = 4; // Unix timestamp when purchased
 }
 
 // ========== Request/Response Messages ==========
@@ -43,6 +53,7 @@ message AddProductRequest {
   string seller = 1;
   string product = 2;
   float initial_price = 3;
+  int32 auction_duration_seconds = 4; // How long the auction should run
 }
 
 message AddProductResponse {
@@ -82,21 +93,33 @@ message GetProductResponse {
   ProductInfo product = 2;
 }
 
+// Get purchased items for a user
+message GetPurchasedItemsRequest {
+  string buyer = 1;
+}
+
+message GetPurchasedItemsResponse {
+  repeated PurchasedItem items = 1;
+}
+
 // ========== Service Definition ==========
 
 service AuctionService {
   // Register a new user
   rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse);
-  
+
   // Add a product for sale
   rpc AddProduct(AddProductRequest) returns (AddProductResponse);
-  
+
   // Place a bid on a product
   rpc PlaceBid(PlaceBidRequest) returns (PlaceBidResponse);
-  
+
   // Get the catalog of all products
   rpc GetCatalog(GetCatalogRequest) returns (GetCatalogResponse);
-  
+
   // Get specific product information
   rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+
+  // Get items purchased by a user
+  rpc GetPurchasedItems(GetPurchasedItemsRequest) returns (GetPurchasedItemsResponse);
 }

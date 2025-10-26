@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	pb "github.com/930r91na/Subasta-grpc/pkg/auction"
 	"google.golang.org/grpc"
@@ -14,19 +15,28 @@ import (
 // AuctionServer implements the gRPC service
 type AuctionServer struct {
 	pb.UnimplementedAuctionServiceServer
-	mu       sync.RWMutex
-	users    map[string]string
-	products map[string]*pb.ProductInfo
-	bids     map[string]*pb.BidInfo
+	mu              sync.RWMutex
+	users           map[string]string
+	products        map[string]*pb.ProductInfo
+	bids            map[string]*pb.BidInfo
+	purchasedItems  map[string][]*pb.PurchasedItem // user -> purchased items
+	highestBidders  map[string]string               // product -> buyer with highest bid
 }
 
 // NewAuctionServer creates a new auction server instance
 func NewAuctionServer() *AuctionServer {
-	return &AuctionServer{
-		users:    make(map[string]string),
-		products: make(map[string]*pb.ProductInfo),
-		bids:     make(map[string]*pb.BidInfo),
+	server := &AuctionServer{
+		users:          make(map[string]string),
+		products:       make(map[string]*pb.ProductInfo),
+		bids:           make(map[string]*pb.BidInfo),
+		purchasedItems: make(map[string][]*pb.PurchasedItem),
+		highestBidders: make(map[string]string),
 	}
+
+	// Start background goroutine to check for expired auctions
+	go server.checkExpiredAuctions()
+
+	return server
 }
 
 // RegisterUser registers a new user in the system
@@ -59,16 +69,25 @@ func (s *AuctionServer) AddProduct(ctx context.Context, req *pb.AddProductReques
 	product := req.GetProduct()
 
 	if _, exists := s.products[product]; !exists {
-		log.Printf("Adding new product: %s", product)
+		// Calculate auction end time
+		duration := req.GetAuctionDurationSeconds()
+		if duration <= 0 {
+			duration = 3600 // Default to 1 hour if not specified
+		}
+		endTime := time.Now().Unix() + int64(duration)
+
+		log.Printf("Adding new product: %s (auction ends in %d seconds)", product, duration)
 		s.products[product] = &pb.ProductInfo{
-			Seller:       req.GetSeller(),
-			Product:      product,
-			InitialPrice: req.GetInitialPrice(),
-			CurrentPrice: req.GetInitialPrice(),
+			Seller:          req.GetSeller(),
+			Product:         product,
+			InitialPrice:    req.GetInitialPrice(),
+			CurrentPrice:    req.GetInitialPrice(),
+			AuctionEndTime:  endTime,
+			IsActive:        true,
 		}
 		return &pb.AddProductResponse{
 			Success: true,
-			Message: fmt.Sprintf("Product %s added successfully", product),
+			Message: fmt.Sprintf("Product %s added successfully. Auction ends at %s", product, time.Unix(endTime, 0).Format(time.RFC3339)),
 		}, nil
 	}
 
@@ -95,6 +114,24 @@ func (s *AuctionServer) PlaceBid(ctx context.Context, req *pb.PlaceBidRequest) (
 		}, nil
 	}
 
+	// Check if auction is still active
+	if !productInfo.IsActive {
+		return &pb.PlaceBidResponse{
+			Success:      false,
+			Message:      "Auction has ended",
+			CurrentPrice: productInfo.CurrentPrice,
+		}, nil
+	}
+
+	// Check if auction time has expired
+	if time.Now().Unix() > productInfo.AuctionEndTime {
+		return &pb.PlaceBidResponse{
+			Success:      false,
+			Message:      "Auction time has expired",
+			CurrentPrice: productInfo.CurrentPrice,
+		}, nil
+	}
+
 	// Check if bid is higher than current price (updatePrice logic)
 	if amount > productInfo.CurrentPrice {
 		productInfo.CurrentPrice = amount
@@ -106,6 +143,9 @@ func (s *AuctionServer) PlaceBid(ctx context.Context, req *pb.PlaceBidRequest) (
 			Product: product,
 			Amount:  amount,
 		}
+
+		// Track highest bidder
+		s.highestBidders[product] = buyer
 
 		log.Printf("Bid accepted: %s offers %.2f for %s", buyer, amount, product)
 		return &pb.PlaceBidResponse{
@@ -122,17 +162,20 @@ func (s *AuctionServer) PlaceBid(ctx context.Context, req *pb.PlaceBidRequest) (
 	}, nil
 }
 
-// GetCatalog returns all products in the catalog
+// GetCatalog returns all active products in the catalog
 func (s *AuctionServer) GetCatalog(ctx context.Context, req *pb.GetCatalogRequest) (*pb.GetCatalogResponse, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	products := make([]*pb.ProductInfo, 0, len(s.products))
 	for _, prod := range s.products {
-		products = append(products, prod)
+		// Only include active auctions
+		if prod.IsActive {
+			products = append(products, prod)
+		}
 	}
 
-	log.Printf("Sending catalog with %d products", len(products))
+	log.Printf("Sending catalog with %d active products", len(products))
 	return &pb.GetCatalogResponse{
 		Products: products,
 	}, nil
@@ -154,6 +197,73 @@ func (s *AuctionServer) GetProduct(ctx context.Context, req *pb.GetProductReques
 	return &pb.GetProductResponse{
 		Found: false,
 	}, nil
+}
+
+// GetPurchasedItems returns all items purchased by a user
+func (s *AuctionServer) GetPurchasedItems(ctx context.Context, req *pb.GetPurchasedItemsRequest) (*pb.GetPurchasedItemsResponse, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	buyer := req.GetBuyer()
+	items := s.purchasedItems[buyer]
+
+	if items == nil {
+		items = []*pb.PurchasedItem{}
+	}
+
+	log.Printf("Sending %d purchased items for user %s", len(items), buyer)
+	return &pb.GetPurchasedItemsResponse{
+		Items: items,
+	}, nil
+}
+
+// checkExpiredAuctions runs in the background to check for and process expired auctions
+func (s *AuctionServer) checkExpiredAuctions() {
+	ticker := time.NewTicker(5 * time.Second) // Check every 5 seconds
+	defer ticker.Stop()
+
+	for range ticker.C {
+		s.processExpiredAuctions()
+	}
+}
+
+// processExpiredAuctions finds expired auctions and transfers items to winners
+func (s *AuctionServer) processExpiredAuctions() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now().Unix()
+
+	for productName, productInfo := range s.products {
+		// Skip if already inactive or not yet expired
+		if !productInfo.IsActive || now <= productInfo.AuctionEndTime {
+			continue
+		}
+
+		// Auction has expired
+		log.Printf("Auction expired for product: %s", productName)
+
+		// Mark as inactive
+		productInfo.IsActive = false
+
+		// Check if there's a winner (highest bidder)
+		if winner, hasWinner := s.highestBidders[productName]; hasWinner {
+			// Create purchased item
+			purchasedItem := &pb.PurchasedItem{
+				Product:       productName,
+				Seller:        productInfo.Seller,
+				PurchasePrice: productInfo.CurrentPrice,
+				PurchaseTime:  now,
+			}
+
+			// Add to winner's purchased items
+			s.purchasedItems[winner] = append(s.purchasedItems[winner], purchasedItem)
+
+			log.Printf("Product %s sold to %s for %.2f", productName, winner, productInfo.CurrentPrice)
+		} else {
+			log.Printf("Product %s auction ended with no bids", productName)
+		}
+	}
 }
 
 func main() {

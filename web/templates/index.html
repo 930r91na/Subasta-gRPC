@@ -47,10 +47,26 @@
             <div id="addProductSection" class="form-section" style="display: none;">
                 <input type="text" id="newProductName" placeholder="Product Name">
                 <input type="number" id="newProductPrice" placeholder="Starting Price" min="0.01" step="0.01">
+                <input type="number" id="auctionDuration" placeholder="Duration (seconds)" min="10" step="1" value="60">
                 <button onclick="addProduct()">Add Product</button>
             </div>
             <div class="empty-state">
                 Need to register to add products
+            </div>
+        </div>
+
+        <!-- Your Stuff Section -->
+        <h2>
+            🎁 Your Stuff
+            <span class="header-controls">
+                <button class="refresh-btn" onclick="loadPurchasedItems()" title="Refresh your items">
+                    🔄 Refresh
+                </button>
+            </span>
+        </h2>
+        <div id="purchasedItems">
+            <div class="empty-state">
+                Please register to view your purchased items
             </div>
         </div>
         

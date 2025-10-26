@@ -109,8 +109,9 @@ async function registerUser() {
             setAddProductUIVisible(true);
             
             await loadCatalog();
+            await loadPurchasedItems();
             startAutoRefresh();
-            
+
             showAlert(`Welcome, ${username}!`, 'success');
         } else {
             showAlert('Registration failed: ' + data.message, 'error');
@@ -182,16 +183,22 @@ function displayProducts(products) {
         div.className = 'product';
         const inputId = `bid-${product.product}`;
         const savedData = savedInputs[inputId] || { value: '' };
-        
+
+        // Calculate time remaining
+        const now = Math.floor(Date.now() / 1000);
+        const timeRemaining = product.auction_end_time - now;
+        const timeRemainingText = formatTimeRemaining(timeRemaining);
+
         div.innerHTML = `
             <h3>📦 ${escapeHtml(product.product)}</h3>
             <p><strong>Seller:</strong> ${escapeHtml(product.seller)}</p>
             <p><strong>Starting Price:</strong> $${product.initial_price.toFixed(2)}</p>
             <p class="price">💰 Current Bid: $${product.current_price.toFixed(2)}</p>
+            <p class="time-remaining">⏰ ${timeRemainingText}</p>
             <div class="bid-section">
-                <input type="number" 
-                       id="${inputId}" 
-                       placeholder="Enter your bid (min $${(product.current_price + 0.01).toFixed(2)})" 
+                <input type="number"
+                       id="${inputId}"
+                       placeholder="Enter your bid (min $${(product.current_price + 0.01).toFixed(2)})"
                        min="${product.current_price + 0.01}"
                        step="0.01"
                        value="${savedData.value}">
@@ -250,7 +257,8 @@ async function placeBid(productName) {
             
             // Force immediate refresh after successful bid
             await loadCatalog();
-            
+            await loadPurchasedItems();
+
             showAlert(`Bid accepted! Current price: $${data.current_price.toFixed(2)}`, 'success');
         } else {
             showAlert(data.message, 'error');
@@ -359,9 +367,11 @@ async function addProduct() {
 
     const productNameInput = document.getElementById('newProductName');
     const productPriceInput = document.getElementById('newProductPrice');
-    
+    const durationInput = document.getElementById('auctionDuration');
+
     const productName = productNameInput.value.trim();
     const initialPrice = parseFloat(productPriceInput.value);
+    const duration = parseInt(durationInput.value) || 60;
 
     if (!productName) {
         showAlert('Please enter a product name', 'warning');
@@ -381,7 +391,8 @@ async function addProduct() {
             body: JSON.stringify({
                 seller: currentUser,
                 product: productName,
-                initial_price: initialPrice // Matches the JSON tag in the Go handler
+                initial_price: initialPrice,
+                auction_duration_seconds: duration
             })
         });
 
@@ -391,6 +402,7 @@ async function addProduct() {
             // Clear inputs
             productNameInput.value = '';
             productPriceInput.value = '';
+            durationInput.value = '60';
             // Refresh catalog immediately
             await loadCatalog();
         } else {
@@ -402,8 +414,75 @@ async function addProduct() {
     }
 }
 
+// Load purchased items
+async function loadPurchasedItems() {
+    if (!currentUser) return;
+
+    try {
+        const response = await fetch(`${CONFIG.API_URL}/auction.AuctionService/GetPurchasedItems`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ buyer: currentUser })
+        });
+
+        const data = await response.json();
+        const items = data.items || [];
+        displayPurchasedItems(items);
+    } catch (err) {
+        console.error('Error loading purchased items:', err);
+    }
+}
+
+// Display purchased items
+function displayPurchasedItems(items) {
+    const container = document.getElementById('purchasedItems');
+
+    if (items.length === 0) {
+        container.innerHTML = '<div class="empty-state">You haven\'t won any auctions yet. Start bidding!</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'purchased-item';
+        const purchaseDate = new Date(item.purchase_time * 1000);
+
+        div.innerHTML = `
+            <h3>🎁 ${escapeHtml(item.product)}</h3>
+            <p><strong>Seller:</strong> ${escapeHtml(item.seller)}</p>
+            <p><strong>Purchase Price:</strong> $${item.purchase_price.toFixed(2)}</p>
+            <p><strong>Won on:</strong> ${purchaseDate.toLocaleString()}</p>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Format time remaining
+function formatTimeRemaining(seconds) {
+    if (seconds <= 0) {
+        return 'Auction ended';
+    }
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m ${secs}s remaining`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${secs}s remaining`;
+    } else {
+        return `${secs}s remaining`;
+    }
+}
+
 // Export functions to global scope for inline onclick handlers
 window.registerUser = registerUser;
 window.placeBid = placeBid;
 window.manualRefresh = manualRefresh;
-window.addProduct = addProduct; 
+window.addProduct = addProduct;
+window.loadPurchasedItems = loadPurchasedItems; 

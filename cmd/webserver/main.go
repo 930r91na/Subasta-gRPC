@@ -30,6 +30,7 @@ func main() {
 	http.HandleFunc("/auction.AuctionService/PlaceBid", corsMiddleware(handlePlaceBid))
 	http.HandleFunc("/auction.AuctionService/AddProduct", corsMiddleware(handleAddProduct))
 	http.HandleFunc("/auction.AuctionService/GetProduct", corsMiddleware(handleGetProduct))
+	http.HandleFunc("/auction.AuctionService/GetPurchasedItems", corsMiddleware(handleGetPurchasedItems))
 
 	// Serve static files from web directory (relative to where you run the command)
 	// This should be run from the project root
@@ -98,10 +99,12 @@ func handleGetCatalog(w http.ResponseWriter, r *http.Request) {
 	products := make([]map[string]interface{}, 0)
 	for _, p := range resp.Products {
 		products = append(products, map[string]interface{}{
-			"seller":        p.Seller,
-			"product":       p.Product,
-			"initial_price": p.InitialPrice,
-			"current_price": p.CurrentPrice,
+			"seller":            p.Seller,
+			"product":           p.Product,
+			"initial_price":     p.InitialPrice,
+			"current_price":     p.CurrentPrice,
+			"auction_end_time":  p.AuctionEndTime,
+			"is_active":         p.IsActive,
 		})
 	}
 
@@ -143,9 +146,10 @@ func handlePlaceBid(w http.ResponseWriter, r *http.Request) {
 
 func handleAddProduct(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Seller       string  `json:"seller"`
-		Product      string  `json:"product"`
-		InitialPrice float64 `json:"initial_price"`
+		Seller                 string  `json:"seller"`
+		Product                string  `json:"product"`
+		InitialPrice           float64 `json:"initial_price"`
+		AuctionDurationSeconds int32   `json:"auction_duration_seconds"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
@@ -153,9 +157,10 @@ func handleAddProduct(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	resp, err := grpcClient.AddProduct(ctx, &pb.AddProductRequest{
-		Seller:       req.Seller,
-		Product:      req.Product,
-		InitialPrice: float32(req.InitialPrice),
+		Seller:                 req.Seller,
+		Product:                req.Product,
+		InitialPrice:           float32(req.InitialPrice),
+		AuctionDurationSeconds: req.AuctionDurationSeconds,
 	})
 
 	if err != nil {
@@ -191,13 +196,49 @@ func handleGetProduct(w http.ResponseWriter, r *http.Request) {
 
 	if resp.Found && resp.Product != nil {
 		result["product"] = map[string]interface{}{
-			"seller":        resp.Product.Seller,
-			"product":       resp.Product.Product,
-			"initial_price": resp.Product.InitialPrice,
-			"current_price": resp.Product.CurrentPrice,
+			"seller":           resp.Product.Seller,
+			"product":          resp.Product.Product,
+			"initial_price":    resp.Product.InitialPrice,
+			"current_price":    resp.Product.CurrentPrice,
+			"auction_end_time": resp.Product.AuctionEndTime,
+			"is_active":        resp.Product.IsActive,
 		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
+}
+
+func handleGetPurchasedItems(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Buyer string `json:"buyer"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	resp, err := grpcClient.GetPurchasedItems(ctx, &pb.GetPurchasedItemsRequest{
+		Buyer: req.Buyer,
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]map[string]interface{}, 0)
+	for _, item := range resp.Items {
+		items = append(items, map[string]interface{}{
+			"product":        item.Product,
+			"seller":         item.Seller,
+			"purchase_price": item.PurchasePrice,
+			"purchase_time":  item.PurchaseTime,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"items": items,
+	})
 }

@@ -105,14 +105,8 @@ async function registerUser() {
             document.getElementById('userStatus').textContent = '✓ Logged in as ' + username;
             usernameInput.disabled = true;
 
-            document.getElementById('addProductSection').style.display = 'flex';
-
-            // Hide the 'Need to register' empty state inside the add-product area
-            const addProductArea = document.getElementById('addProductArea');
-            if (addProductArea) {
-                const empty = addProductArea.querySelector('.empty-state');
-                if (empty) empty.style.display = 'none';
-            }
+            // Show add-product form and hide the "need to register" message
+            setAddProductUIVisible(true);
             
             await loadCatalog();
             startAutoRefresh();
@@ -270,7 +264,11 @@ async function placeBid(productName) {
 // Add bid to history
 function addBidToHistory(buyer, product, amount) {
     const history = document.getElementById('bidHistory');
-    
+    if (!history) {
+        console.warn('addBidToHistory: #bidHistory element not found');
+        return;
+    }
+
     // Remove empty state if present
     const emptyState = history.querySelector('.empty-state');
     if (emptyState) {
@@ -342,16 +340,21 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function setAddProductUIVisible(visible) {
+    const form = document.getElementById('addProductSection');
+    const area = document.getElementById('addProductArea');
+    if (form) form.style.display = visible ? 'flex' : 'none';
+    if (area) {
+        const empty = area.querySelector('.empty-state');
+        if (empty) empty.style.display = visible ? 'none' : 'block';
+    }
+}
+
 // Add new product
 async function addProduct() {
     if (!currentUser) {
         showAlert('Please register first', 'warning');
         return;
-    }
-
-    const emptyState = history.querySelector('.empty-state');
-    if (emptyState) {
-        history.innerHTML = '';
     }
 
     const productNameInput = document.getElementById('newProductName');
@@ -388,13 +391,6 @@ async function addProduct() {
             // Clear inputs
             productNameInput.value = '';
             productPriceInput.value = '';
-            // Hide the add-product empty state (if any) and refresh catalog immediately
-            const addProductArea = document.getElementById('addProductArea');
-            if (addProductArea) {
-                const empty = addProductArea.querySelector('.empty-state');
-                if (empty) empty.style.display = 'none';
-            }
-
             // Refresh catalog immediately
             await loadCatalog();
         } else {

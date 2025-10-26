@@ -23,6 +23,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
+	// Initialize the gRPC client with mock interactions
+	// This is not required for the webserver but demonstrates client usage.
+
 	// Example 1: Register users
 	fmt.Println("=== Registering Users ===")
 	users := []string{"John", "Mary", "Peter"}

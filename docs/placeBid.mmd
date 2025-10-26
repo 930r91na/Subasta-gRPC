@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant JS as auction.js
+    participant WebServer as HTTP Server
+    participant gRPC as gRPC Server
+    participant Products as Product Storage
+    participant Bids as Bid Storage
+
+    User->>Browser: Enter bid amount & click "Place Bid"
+    Browser->>JS: placeBid("Laptop") called
+    
+    JS->>JS: Validate amount > 0
+    JS->>JS: Get amount from input field
+    
+    JS->>WebServer: POST /PlaceBid<br/>{buyer: "Alice", product: "Laptop", amount: 150}
+    WebServer->>WebServer: Convert JSON to gRPC request
+    WebServer->>gRPC: PlaceBid(buyer, product, amount)
+    
+    gRPC->>Products: Get product "Laptop"
+    
+    alt Product exists
+        Products-->>gRPC: Product data (current_price: 100)
+        
+        alt Bid > Current Price
+            gRPC->>Products: Update current_price = 150
+            gRPC->>Bids: Store bid info
+            gRPC-->>WebServer: {success: true, current_price: 150}
+            WebServer-->>JS: JSON response
+            
+            JS->>JS: addBidToHistory(Alice, Laptop, 150)
+            JS->>JS: Clear input field
+            JS->>JS: loadCatalog() [Force refresh]
+            JS->>Browser: Update UI
+            JS->>User: Show success message
+        else Bid <= Current Price
+            gRPC-->>WebServer: {success: false, message: "Bid too low"}
+            WebServer-->>JS: JSON response
+            JS->>User: Show error message
+        end
+    else Product doesn't exist
+        gRPC-->>WebServer: {success: false, message: "Product not found"}
+        WebServer-->>JS: JSON response
+        JS->>User: Show error message
+    end

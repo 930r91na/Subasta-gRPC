@@ -1,0 +1,41 @@
+graph TB
+    subgraph "Client Layer"
+        Browser[Web Browser]
+        HTML[HTML<br/>index.html]
+        CSS[CSS<br/>styles.css]
+        JS[JavaScript<br/>auction.js]
+    end
+    
+    subgraph "HTTP Server Layer"
+        WebServer[Web Server<br/>Port 8080<br/>webserver/main.go]
+    end
+    
+    subgraph "gRPC Server Layer"
+        GRPCServer[gRPC Server<br/>Port 50051<br/>server/main.go]
+        Proto[Protocol Buffers<br/>auction.proto]
+    end
+    
+    subgraph "Data Layer"
+        Users[(Users Map)]
+        Products[(Products Map)]
+        Bids[(Bids Map)]
+    end
+    
+    Browser --> HTML
+    Browser --> CSS
+    Browser --> JS
+    
+    JS -->|HTTP/JSON| WebServer
+    WebServer -->|gRPC/Protobuf| GRPCServer
+    
+    GRPCServer --> Proto
+    GRPCServer --> Users
+    GRPCServer --> Products
+    GRPCServer --> Bids
+    
+    style Browser fill:#e1f5ff
+    style WebServer fill:#fff4e1
+    style GRPCServer fill:#e8f5e9
+    style Users fill:#f3e5f5
+    style Products fill:#f3e5f5
+    style Bids fill:#f3e5f5

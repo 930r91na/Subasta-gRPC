@@ -1,0 +1,39 @@
+graph LR
+    subgraph "Client State (Per Browser)"
+        CS[Client State]
+        CS --> CU[currentUser: 'Alice']
+        CS --> IT[isTyping: false]
+        CS --> TT[typingTimer: timeout_id]
+        CS --> RI[refreshInterval: interval_id]
+        CS --> LH[lastCatalogHash: 'abc123...']
+        CS --> SI[savedInputs: object]
+    end
+    
+    subgraph "Server State (Shared)"
+        SS[Server State]
+        SS --> UM[users map]
+        SS --> PM[products map]
+        SS --> BM[bids map]
+        
+        UM --> U1[Alice: 'Alice']
+        UM --> U2[Bob: 'Bob']
+        
+        PM --> P1[Laptop: ProductInfo]
+        PM --> P2[Phone: ProductInfo]
+        
+        P1 --> P1S[Seller: John]
+        P1 --> P1I[InitialPrice: 100]
+        P1 --> P1C[CurrentPrice: 175]
+        
+        BM --> B1[LaptopAlice: 150]
+        BM --> B2[LaptopBob: 175]
+    end
+    
+    CS -.->|HTTP Requests| SS
+    SS -.->|JSON Responses| CS
+    
+    style CS fill:#e1f5ff
+    style SS fill:#c8e6c9
+    style UM fill:#fff4e1
+    style PM fill:#fff4e1
+    style BM fill:#fff4e1

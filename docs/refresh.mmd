@@ -1,0 +1,40 @@
+stateDiagram-v2
+    [*] --> NotLoggedIn: Page Load
+    
+    NotLoggedIn --> LoggedIn: User registers
+    
+    LoggedIn --> AutoRefreshActive: startAutoRefresh()
+    
+    state AutoRefreshActive {
+        [*] --> Waiting
+        Waiting --> CheckTyping: Timer (5s)
+        
+        CheckTyping --> Refreshing: isTyping = false
+        CheckTyping --> Waiting: isTyping = true (skip)
+        
+        Refreshing --> FetchCatalog: Call loadCatalog()
+        FetchCatalog --> CompareHash: Get products
+        
+        CompareHash --> UpdateUI: Hash changed
+        CompareHash --> NoUpdate: Hash same
+        
+        UpdateUI --> Waiting
+        NoUpdate --> Waiting
+    }
+    
+    state "Typing State" as TypingState {
+        [*] --> NotTyping
+        NotTyping --> Typing: User types in input
+        Typing --> Cooldown: Stop typing
+        Cooldown --> NotTyping: 2s elapsed
+    }
+    
+    note right of AutoRefreshActive
+        Refresh every 5 seconds
+        But skip if user is typing
+    end note
+    
+    note right of TypingState
+        Prevents interrupting
+        user input during typing
+    end note

@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant JS as auction.js
+    participant WebServer as HTTP Server<br/>(Port 8080)
+    participant gRPC as gRPC Server<br/>(Port 50051)
+    participant Data as User Storage
+
+    User->>Browser: Enter username & click Register
+    Browser->>JS: registerUser() called
+    
+    JS->>JS: Validate username (not empty)
+    
+    JS->>WebServer: POST /RegisterUser<br/>{name: "Alice"}
+    WebServer->>WebServer: Parse JSON request
+    WebServer->>gRPC: RegisterUser(name: "Alice")
+    
+    gRPC->>Data: Check if user exists
+    
+    alt User doesn't exist
+        gRPC->>Data: Store new user
+        Data-->>gRPC: Success
+        gRPC-->>WebServer: {success: true, message: "..."}
+        WebServer-->>JS: JSON Response
+        JS->>JS: Set currentUser = "Alice"
+        JS->>Browser: Update UI (disable input, show status)
+        JS->>JS: loadCatalog()
+        JS->>JS: startAutoRefresh()
+        JS->>User: Show "Welcome, Alice!"
+    else User exists
+        gRPC-->>WebServer: {success: false, message: "User exists"}
+        WebServer-->>JS: JSON Response
+        JS->>User: Show error message
+    end
